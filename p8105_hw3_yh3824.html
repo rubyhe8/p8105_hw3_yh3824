@@ -568,6 +568,84 @@ Coffee Ice Cream are consumed</h3>
 </table>
 </div>
 </div>
+<div id="problem-2" class="section level2">
+<h2>Problem 2</h2>
+<pre class="r"><code>zipcode_df = 
+  read_csv(&quot;zillow_data/Zip Codes.csv&quot;) |&gt; 
+  janitor::clean_names() |&gt; 
+  mutate(zip_code = as.integer(zip_code)) |&gt; 
+  select(-state_fips, - county_code, -county_fips, -file_date) |&gt; 
+  distinct(zip_code, .keep_all = TRUE)</code></pre>
+<pre><code>## Rows: 322 Columns: 7
+## ── Column specification ────────────────────────────────────────────────────────
+## Delimiter: &quot;,&quot;
+## chr (4): County, County Code, File Date, Neighborhood
+## dbl (3): State FIPS, County FIPS, ZipCode
+## 
+## ℹ Use `spec()` to retrieve the full column specification for this data.
+## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
+<p>import and clean zori data</p>
+<pre class="r"><code>zori_df =
+  read_csv(&quot;zillow_data/Zip_Zori_uc_sfrcondomfr_sm_month_NYC.csv&quot;) |&gt; 
+  janitor::clean_names() |&gt; 
+  mutate(zip_code = as.integer(region_name)) |&gt; 
+  pivot_longer(x2015_01_31:x2024_08_31, 
+               names_to = &quot;date&quot;, 
+               values_to = &quot;zori&quot;,
+               names_prefix = &quot;x&quot;) |&gt; 
+  separate(date, into = c(&quot;year&quot;, &quot;month&quot;, &quot;day&quot;), sep = &quot;_&quot;, convert = TRUE) |&gt; 
+  rename(county = county_name) |&gt; 
+  mutate(county = str_remove(county, 
+                                  regex(&quot; county$&quot;, ignore_case = TRUE))) |&gt; 
+  select(county, zip_code, year, month, zori) </code></pre>
+<pre><code>## Rows: 149 Columns: 125
+## ── Column specification ────────────────────────────────────────────────────────
+## Delimiter: &quot;,&quot;
+## chr   (6): RegionType, StateName, State, City, Metro, CountyName
+## dbl (119): RegionID, SizeRank, RegionName, 2015-01-31, 2015-02-28, 2015-03-3...
+## 
+## ℹ Use `spec()` to retrieve the full column specification for this data.
+## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
+<div id="questions-about-zip-codes-amoutn-of-times-seen" class="section level3">
+<h3>questions about zip codes amoutn of times seen</h3>
+</div>
+<div id="reader-friendly-table-showing-avg-rental-price-in-each-borough-and-year" class="section level3">
+<h3>reader friendly table showing avg rental price in each borough and
+YEAR</h3>
+</div>
+<div id="compute-avg-rental-price-within-each-zip-code-over-each-month-in-2023-make-a-plot" class="section level3">
+<h3>compute avg rental price within each zip code over each month in
+2023 + make a plot</h3>
+</div>
+<div id="combine-2-previous-plots-into-a-single-graphic-and-export-into-a-results-folder-in-repo" class="section level3">
+<h3>combine 2 previous plots into a single graphic and export into a
+results folder in repo</h3>
+</div>
+</div>
+<div id="problem-3" class="section level2">
+<h2>Problem 3</h2>
+<pre class="r"><code>demo_df = 
+  read_csv(&quot;nhanes_covar.csv&quot;)</code></pre>
+<pre><code>## New names:
+## Rows: 254 Columns: 5
+## ── Column specification
+## ──────────────────────────────────────────────────────── Delimiter: &quot;,&quot; chr
+## (5): ...1, 1 = male, ...3, ...4, 1 = Less than high school
+## ℹ Use `spec()` to retrieve the full column specification for this data. ℹ
+## Specify the column types or set `show_col_types = FALSE` to quiet this message.
+## • `` -&gt; `...1`
+## • `` -&gt; `...3`
+## • `` -&gt; `...4`</code></pre>
+<pre class="r"><code>accel_df = 
+  read_csv(&quot;nhanes_accel.csv&quot;)</code></pre>
+<pre><code>## Rows: 250 Columns: 1441
+## ── Column specification ────────────────────────────────────────────────────────
+## Delimiter: &quot;,&quot;
+## dbl (1441): SEQN, min1, min2, min3, min4, min5, min6, min7, min8, min9, min1...
+## 
+## ℹ Use `spec()` to retrieve the full column specification for this data.
+## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
+</div>
 
 
 

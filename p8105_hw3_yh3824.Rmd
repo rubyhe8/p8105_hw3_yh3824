@@ -87,3 +87,49 @@ instacart |>
 ```
 
 
+## Problem 2
+```{r}
+zipcode_df = 
+  read_csv("zillow_data/Zip Codes.csv") |> 
+  janitor::clean_names() |> 
+  mutate(zip_code = as.integer(zip_code)) |> 
+  select(-state_fips, - county_code, -county_fips, -file_date) |> 
+  distinct(zip_code, .keep_all = TRUE)
+```
+
+import and clean zori data
+```{r}
+zori_df =
+  read_csv("zillow_data/Zip_Zori_uc_sfrcondomfr_sm_month_NYC.csv") |> 
+  janitor::clean_names() |> 
+  mutate(zip_code = as.integer(region_name)) |> 
+  pivot_longer(x2015_01_31:x2024_08_31, 
+               names_to = "date", 
+               values_to = "zori",
+               names_prefix = "x") |> 
+  separate(date, into = c("year", "month", "day"), sep = "_", convert = TRUE) |> 
+  rename(county = county_name) |> 
+  mutate(county = str_remove(county, 
+                                  regex(" county$", ignore_case = TRUE))) |> 
+  select(county, zip_code, year, month, zori) 
+```
+
+### questions about zip codes amoutn of times seen 
+
+### reader friendly table showing avg rental price in each borough and YEAR 
+
+### compute avg rental price within each zip code over each month in 2023 + make a plot
+
+### combine 2 previous plots into a single graphic and export into a results folder in repo
+
+
+## Problem 3
+```{r}
+demo_df = 
+  read_csv("nhanes_covar.csv")
+
+accel_df = 
+  read_csv("nhanes_accel.csv")
+```
+
+
