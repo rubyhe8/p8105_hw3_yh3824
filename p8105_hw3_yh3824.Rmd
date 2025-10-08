@@ -5,8 +5,9 @@ date: "2025-10-02"
 output: html_document
 ---
 
-```{r}
+```{r include = FALSE, message = FALSE, warning = FALSE}
 library(tidyverse)
+library(patchwork)
 
 knitr::opts_chunk$set(
   fig.width = 6,
@@ -48,12 +49,11 @@ There are 134 aisles and the aisles with the most items ordered are `fresh veget
 ```{r}
 aislecnt |> 
   filter(n_obs > 10000) |> 
-  ggplot(aes(x = n_obs, y = reorder(aisle, n_obs))) +
-  geom_col(width = 0.5) +
-  scale_x_continuous(breaks = seq(10000, 150700, by = 20000)) +
+  ggplot(aes(x = reorder(aisle, n_obs), y = n_obs)) +
+  geom_col(width = 0.7) +
+  scale_y_continuous(breaks = seq(10000, 150700, by = 20000)) +
   theme (
-    axis.text.x = element_text(size = 12),
-    axis.text.y = element_text(size = 12)
+    axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)
   )
 ```
 
@@ -95,6 +95,28 @@ zipcode_df =
   mutate(zip_code = as.integer(zip_code)) |> 
   select(-state_fips, - county_code, -county_fips, -file_date) |> 
   distinct(zip_code, .keep_all = TRUE)
+
+zip_codes_df = 
+  read_csv("zillow_data/Zip Codes.csv") |> 
+  janitor::clean_names() |> 
+  filter(
+    !(zip_code == 10463 & county == "New York"),
+    !(zip_code == 11201 & county == "New York"))  |> 
+  mutate(
+    borough = case_match(
+      county,
+      "Bronx" ~ "Bronx",
+      "Kings" ~ "Brooklyn",
+      "New York" ~ "Manhattan",
+      "Queens" ~ "Queens",
+      "Richmond" ~ "Staten Island"
+    )
+  ) |> 
+  select(zip_code, borough, neighborhood)
+
+
+
+
 ```
 
 import and clean zori data
@@ -112,24 +134,132 @@ zori_df =
   mutate(county = str_remove(county, 
                                   regex(" county$", ignore_case = TRUE))) |> 
   select(county, zip_code, year, month, zori) 
+
+nyc_zillow_df = 
+  read_csv("zillow_data/Zip_Zori_uc_sfrcondomfr_sm_month_NYC.csv") |> 
+  pivot_longer(
+    -(RegionID:CountyName),
+    names_to = "month",
+    values_to = "price") |> 
+  janitor::clean_names() |> 
+  rename(zip_code = region_name) |> 
+  mutate(
+    month = as_date(month),
+    year = floor_date(month, unit = "year"),
+    zip_code = as.numeric(zip_code)) |> 
+  select(-county_name)
+
+nyc_price_df = 
+  left_join(nyc_zillow_df, zip_codes_df, by = "zip_code")
 ```
 
-### questions about zip codes amoutn of times seen 
+### How many zip codes are observed 116 times, how many are observed fewer than 10 times, why are some zip codes observed rarely and others observed in each month 
+```{r}
+nyc_price_df |> 
+  group_by(zip_code) |> 
+  summarize(count = n()) |> 
+  filter(count > 115) |> 
+  knitr::kable(digits = 1)
+```
+
+149 zip codes are observed 116 times. All 
 
 ### reader friendly table showing avg rental price in each borough and YEAR 
+```{r}
+nyc_price_df |> 
+  group_by(borough, year) |> 
+  summarize(avg_price = mean(price, na.rm = TRUE)) |> 
+  pivot_wider(
+    names_from = year, 
+    values_from = avg_price
+  ) |> 
+  knitr::kable(digits = 1)
+```
+
+### Make a plot showing NYC Rental Prices within ZIP codes for all available years. Your plot should facilitate comparisons across boroughs. Comment on any significant elements of this plot. 
+```{r}
+price_zip_allyears = 
+nyc_price_df |> 
+  group_by(borough, zip_code, year) |> 
+  summarize(avg_price = mean(price, na.rm = TRUE)) |> 
+  ggplot(aes(x = borough, y = avg_price)) +
+  geom_boxplot() +
+  facet_wrap(~year)
+```
 
 ### compute avg rental price within each zip code over each month in 2023 + make a plot
+```{r}
+price_zip_2023 =
+nyc_price_df |> 
+  filter(year == "2023-01-01") |> 
+  group_by(zip_code, month, borough) |> 
+  summarize(avg_price = mean(price, na.rm = TRUE)) |> 
+  ggplot(aes(x = borough, y = avg_price)) +
+  geom_boxplot() 
+```
 
 ### combine 2 previous plots into a single graphic and export into a results folder in repo
+```{r}
+price_zip_allyears / price_zip_2023
+```
 
 
 ## Problem 3
+
+Your final dataset should include all originally observed variables; exclude participants less than 21 years of age, and those with missing demographic data; and encode data with reasonable variable classes (i.e. not numeric, and using factors with the ordering of tables and plots in mind)
+
 ```{r}
 demo_df = 
-  read_csv("nhanes_covar.csv")
+  read_csv("nhanes_covar.csv", skip = 4, na = "NA") |> 
+  janitor::clean_names() |> 
+  filter(age > 20) |> 
+  na.omit() |> 
+  mutate(sex = ifelse(sex == 1, "male", "female"), 
+         education = case_when(
+    education == 1 ~ "Less than high school",
+    education == 2 ~ "High school equivalent",
+    education == 3 ~ "More than high school"))
 
 accel_df = 
-  read_csv("nhanes_accel.csv")
+  read_csv("nhanes_accel.csv", na = "NA") |> 
+  janitor::clean_names() |> 
+  na.omit()
+
+
+combine_df = 
+  left_join(demo_df, accel_df, by = "seqn")
 ```
 
+i do not think i need a pivot longer in this question!!
+pivot_longer(
+    cols = starts_with("min"),
+    names_to = "min_num",
+    values_to = "min_value",
+    names_prefix = "min"
+    
+    
+### produce a reader-friendly table for the number of men and woemn in each education category, create a visualization of the age distributions for men and women in each education category 
 
+
+```{r}
+combine_df |> 
+  group_by(sex, education) |> 
+  summarize(count = n()) |> 
+  pivot_wider(
+    names_from = education,
+    values_from = count
+  ) |> 
+  knitr::kable(digits = 1)
+
+combine_df |> 
+  ggplot(aes(x = age)) +
+  geom_histogram() +
+  facet_grid(sex ~ education)
+```
+
+### aggregate across minutes to create a total activity variable for each participant, plot y = total activity, x = age, should compare men to women and have separate panels for each education level, include a trend line or smooth to illustrate differences 
+```{r}
+
+```
+
+### make a 3 panel plot that shows the 24-hr activity time courses for each education level and use color to indicate sex, describe in words any patterns or conclusions you can make based on this graph including a smooth trends may help
