@@ -158,7 +158,13 @@ nyc_price_df =
 nyc_price_df |> 
   group_by(zip_code) |> 
   summarize(count = n()) |> 
-  filter(count > 115) |> 
+  filter(count == 116) |> 
+  knitr::kable(digits = 1)
+
+nyc_price_df |> 
+  group_by(zip_code) |> 
+  summarize(count = n()) |> 
+  filter(count < 10) |> 
   knitr::kable(digits = 1)
 ```
 
@@ -178,7 +184,7 @@ nyc_price_df |>
 
 ### Make a plot showing NYC Rental Prices within ZIP codes for all available years. Your plot should facilitate comparisons across boroughs. Comment on any significant elements of this plot. 
 ```{r}
-price_zip_allyears = 
+#price_zip_allyears = 
 nyc_price_df |> 
   group_by(borough, zip_code, year) |> 
   summarize(avg_price = mean(price, na.rm = TRUE)) |> 
@@ -189,7 +195,7 @@ nyc_price_df |>
 
 ### compute avg rental price within each zip code over each month in 2023 + make a plot
 ```{r}
-price_zip_2023 =
+#price_zip_2023 =
 nyc_price_df |> 
   filter(year == "2023-01-01") |> 
   group_by(zip_code, month, borough) |> 
@@ -200,7 +206,7 @@ nyc_price_df |>
 
 ### combine 2 previous plots into a single graphic and export into a results folder in repo
 ```{r}
-price_zip_allyears / price_zip_2023
+# price_zip_allyears / price_zip_2023
 ```
 
 
@@ -230,12 +236,7 @@ combine_df =
   left_join(demo_df, accel_df, by = "seqn")
 ```
 
-i do not think i need a pivot longer in this question!!
-pivot_longer(
-    cols = starts_with("min"),
-    names_to = "min_num",
-    values_to = "min_value",
-    names_prefix = "min"
+
     
     
 ### produce a reader-friendly table for the number of men and woemn in each education category, create a visualization of the age distributions for men and women in each education category 
@@ -259,7 +260,31 @@ combine_df |>
 
 ### aggregate across minutes to create a total activity variable for each participant, plot y = total activity, x = age, should compare men to women and have separate panels for each education level, include a trend line or smooth to illustrate differences 
 ```{r}
-
+combine_df |> 
+  mutate(total_activity = rowSums(across(starts_with("min")), na.rm = TRUE)) |> 
+  ggplot(aes(x = age, y = total_activity, color = sex)) +
+  geom_point() +
+  geom_smooth() +
+  facet_wrap(~education)
 ```
 
 ### make a 3 panel plot that shows the 24-hr activity time courses for each education level and use color to indicate sex, describe in words any patterns or conclusions you can make based on this graph including a smooth trends may help
+
+```{r}
+combine_df |> 
+  pivot_longer(
+    cols = starts_with("min"),
+    names_to = "minute",
+    values_to = "activity",
+    names_prefix = "min") |> 
+  mutate(
+    minute = as.numeric(minute), 
+    hour = minute / 60
+  ) |> 
+  group_by(education, sex, hour) |> 
+  summarize(mean_activity = mean(activity, na.rm = TRUE), .groups = "drop") |> 
+  ggplot(aes(x = hour, y = mean_activity, color = sex)) +
+  geom_line() +
+  facet_wrap(~education, ncol = 1)
+```
+
