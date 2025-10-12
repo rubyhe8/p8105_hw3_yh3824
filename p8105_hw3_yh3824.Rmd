@@ -1,5 +1,5 @@
 ---
-title: "p8105_hw3_yh3824"
+title: "Homework 3"
 author: "ruby"
 date: "2025-10-02"
 output: html_document
@@ -35,7 +35,7 @@ data("instacart")
 instacart
 ```
 
-The `instacart` dataset containts `r nrow(instacart)` observations and `r ncol(instacart)` variables. Each row represents a product from an order. There are `r n_distinct(instacart$order_id)` unique order_ids. 
+The `instacart` dataset contains `r nrow(instacart)` observations and `r ncol(instacart)` variables. Each row represents a product from an order. There are `r n_distinct(instacart$order_id)` unique order_ids. Some examples of items in the dataset include order day of the week, order hour of the day, and information about the items ordered including the product name, the aisle it was in, and which department it falls into. For example, order_id 1145 ordered 29 items on Friday including items such as strawberries, spinach pizza, multi grain cheerios cereal, and everything bagels. 
 
 ```{r}
 aislecnt = instacart |> 
@@ -43,7 +43,10 @@ aislecnt = instacart |>
   arrange(desc(n_obs))
 ```
 
-There are 134 aisles and the aisles with the most items ordered are `fresh vegetables` with 150,609 items, `fresh fruits` with 150,473 items, `packaged vegetable fruits` with 78,493 items. 
+There are `r nrow(aislecnt)` aisles in total.
+The aisles with the most items ordered are `r aislecnt |> slice_head(n = 1) |> pull(aisle)` with `r aislecnt |> slice_head(n = 1) |> pull(n_obs)` items,
+`r aislecnt |> slice_head(n = 2) |> slice_tail(n = 1) |> pull(aisle)` with `r aislecnt |> slice_head(n = 2) |> slice_tail(n = 1) |> pull(n_obs)` items,
+and `r aislecnt |> slice_head(n = 3) |> slice_tail(n = 1) |> pull(aisle)` with `r aislecnt |> slice_head(n = 3) |> slice_tail(n = 1) |> pull(n_obs)` items.
 
 ### Plot
 ```{r}
@@ -54,7 +57,10 @@ aislecnt |>
   scale_y_continuous(breaks = seq(10000, 150700, by = 20000)) +
   theme (
     axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)
-  )
+  ) +
+  labs(x = "Aisle", 
+       y = "Number of Items Ordered", 
+       title = "Items ordered by Aisle with more than 10,000 items ordered")
 ```
 
 ### Table with 3 most popular items in each of the aisles 
@@ -64,9 +70,8 @@ instacart |>
   group_by(aisle, product_name) |> 
   summarize(count = n()) |> 
   arrange(desc(count)) |> 
-  slice_head(n=3) |> 
+  slice_max(order_by = count, n=3) |> 
   knitr::kable(digits = 1)
-  
 ```
 
 ### Table showing the mean hour of the day at which Pink Lady Apples + Coffee Ice Cream are consumed 
@@ -76,9 +81,10 @@ instacart |>
   mutate(order_dow = recode(order_dow,
                             `0` = "Sunday", `1` = "Monday", `2` = "Tuesday",
                             `3` = "Wednesday", `4` = "Thursday",
-                            `5` = "Friday", `6` = "Saturday")) |> 
+                            `5` = "Friday", `6` = "Saturday"),
+         order_dow = factor(order_dow, levels = c("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"), ordered = TRUE)) |> 
   group_by(product_name, order_dow) |> 
-  summarize(mean_hour = mean(order_hour_of_day)) |> 
+  summarize(mean_hour = mean(order_hour_of_day, na.rm = TRUE)) |> 
   pivot_wider(
     names_from = order_dow,
     values_from = mean_hour
@@ -90,13 +96,6 @@ instacart |>
 ## Problem 2
 ```{r}
 zipcode_df = 
-  read_csv("zillow_data/Zip Codes.csv") |> 
-  janitor::clean_names() |> 
-  mutate(zip_code = as.integer(zip_code)) |> 
-  select(-state_fips, - county_code, -county_fips, -file_date) |> 
-  distinct(zip_code, .keep_all = TRUE)
-
-zip_codes_df = 
   read_csv("zillow_data/Zip Codes.csv") |> 
   janitor::clean_names() |> 
   filter(
@@ -113,28 +112,10 @@ zip_codes_df =
     )
   ) |> 
   select(zip_code, borough, neighborhood)
-
-
-
-
 ```
 
 import and clean zori data
 ```{r}
-zori_df =
-  read_csv("zillow_data/Zip_Zori_uc_sfrcondomfr_sm_month_NYC.csv") |> 
-  janitor::clean_names() |> 
-  mutate(zip_code = as.integer(region_name)) |> 
-  pivot_longer(x2015_01_31:x2024_08_31, 
-               names_to = "date", 
-               values_to = "zori",
-               names_prefix = "x") |> 
-  separate(date, into = c("year", "month", "day"), sep = "_", convert = TRUE) |> 
-  rename(county = county_name) |> 
-  mutate(county = str_remove(county, 
-                                  regex(" county$", ignore_case = TRUE))) |> 
-  select(county, zip_code, year, month, zori) 
-
 nyc_zillow_df = 
   read_csv("zillow_data/Zip_Zori_uc_sfrcondomfr_sm_month_NYC.csv") |> 
   pivot_longer(
@@ -150,81 +131,110 @@ nyc_zillow_df =
   select(-county_name)
 
 nyc_price_df = 
-  left_join(nyc_zillow_df, zip_codes_df, by = "zip_code")
+  left_join(nyc_zillow_df, zipcode_df, by = "zip_code")
 ```
 
-### How many zip codes are observed 116 times, how many are observed fewer than 10 times, why are some zip codes observed rarely and others observed in each month 
+### How many zip codes are observed 116 times -> how many are observed once a month over the 116 months , how many are observed fewer than 10 times, why are some zip codes observed rarely and others observed in each month 
 ```{r}
 nyc_price_df |> 
-  group_by(zip_code) |> 
+  group_by(zip_code) |>
+  drop_na(price) |> 
   summarize(count = n()) |> 
-  filter(count == 116) |> 
-  knitr::kable(digits = 1)
-
-nyc_price_df |> 
-  group_by(zip_code) |> 
-  summarize(count = n()) |> 
-  filter(count < 10) |> 
+  summarize(
+    obs116 = sum(count == 116),
+    less10 = sum(count < 10))|> 
   knitr::kable(digits = 1)
 ```
 
-149 zip codes are observed 116 times. All 
+48 zip codes appear 116 times and 26 appear less than 10 times. Some zip codes may be observed more in a month because some rental properties may be 
+/ write up 
 
-### reader friendly table showing avg rental price in each borough and YEAR 
+### Average rental price in each borough and year
 ```{r}
 nyc_price_df |> 
   group_by(borough, year) |> 
   summarize(avg_price = mean(price, na.rm = TRUE)) |> 
+  mutate(year=year(year)) |> 
   pivot_wider(
     names_from = year, 
     values_from = avg_price
   ) |> 
   knitr::kable(digits = 1)
 ```
+Average rental price is the highest in Manhattan and the lowest in the Bronx. Overall average rental price increases over time, with some exceptions (For example rental price dropped from $3310 to $3106 in Manhattan from 2019 to 2020, this could be due to the COVID-19 pandemic possibly). There is no information for Staten Island average rental prices until 2020. Queens seems to have the slowest increase in average rent over the years, and Manhattan has the steepest increase over time. 
 
-### Make a plot showing NYC Rental Prices within ZIP codes for all available years. Your plot should facilitate comparisons across boroughs. Comment on any significant elements of this plot. 
+### Plot showing NYC rental prices within zip codes, comparing across boroughs 
 ```{r}
-#price_zip_allyears = 
+price_zip_allyears = 
 nyc_price_df |> 
-  group_by(borough, zip_code, year) |> 
+  group_by(zip_code, year) |> 
+  ggplot(aes(x = year, y = price, color = borough)) +
+  geom_smooth(formula = y ~ s(x, k = 5), se = FALSE, na.rm = TRUE) +
+  scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
+  labs(
+    x = "Year",
+    y = "Average Monthly Rent ($)",
+    color = "Borough", 
+    title = "NYC Rental Prices by Borough and Year"
+  ) + 
+  theme_bw()
+
+price_zip_allyears
+```
+
+This plot shows NYC rental prices within zip codes, comparing over time in each borough. Overall, all rent prices increased over time, with the steepest increases occurring after 2022. The Bronx, Brooklyn, and Manhattan boroughs experienced a drop in rent in 2020-2021. The Bronx experiences a steady incline over the years. Because there is no information regarding rental prices prior to 2020 for Staten Island, we can see that the line for Staten Island does not begin until 2020. Rental prices in the Bronx and Staten Island are most similar and are the lowest.
+
+### Average rental price within each zip code over months in 2023, compared across boroughs
+```{r}
+price_zip_2023 =
+nyc_price_df |> 
+  filter(year(year) == 2023) |> 
+  group_by(zip_code, borough) |> 
   summarize(avg_price = mean(price, na.rm = TRUE)) |> 
   ggplot(aes(x = borough, y = avg_price)) +
   geom_boxplot() +
-  facet_wrap(~year)
+  scale_y_continuous(breaks = scales::breaks_width(1000)) +
+  labs(
+    x = "Borough",
+    y = "Average Price across ZipCodes", 
+    title = "Zip-code level rental prices across boroughs in 2023"
+  ) +
+  theme_bw()
+
+price_zip_2023
 ```
 
-### compute avg rental price within each zip code over each month in 2023 + make a plot
-```{r}
-#price_zip_2023 =
-nyc_price_df |> 
-  filter(year == "2023-01-01") |> 
-  group_by(zip_code, month, borough) |> 
-  summarize(avg_price = mean(price, na.rm = TRUE)) |> 
-  ggplot(aes(x = borough, y = avg_price)) +
-  geom_boxplot() 
-```
+Rental prices in Manhattan have the greatest range, along with outliers at approximately $6,600 and $7,800. The average rent per month in Manhattan in 2023 is just over $4,000. Staten Island rental prices have the smallest range with an average of approximately $2,300. 
 
-### combine 2 previous plots into a single graphic and export into a results folder in repo
+### Combining 2 previous plots into one and saving into a `results` folder in repo
 ```{r}
-# price_zip_allyears / price_zip_2023
+zillowplots = price_zip_allyears / price_zip_2023
+
+ggsave(filename = "zillowplot.png", 
+       plot = zillowplots,
+       device = png,
+       path = "results")
 ```
 
 
 ## Problem 3
-
-Your final dataset should include all originally observed variables; exclude participants less than 21 years of age, and those with missing demographic data; and encode data with reasonable variable classes (i.e. not numeric, and using factors with the ordering of tables and plots in mind)
-
+Loading, tidying, and merging the datasets.
 ```{r}
 demo_df = 
   read_csv("nhanes_covar.csv", skip = 4, na = "NA") |> 
   janitor::clean_names() |> 
   filter(age > 20) |> 
-  na.omit() |> 
+  drop_na() |> 
   mutate(sex = ifelse(sex == 1, "male", "female"), 
          education = case_when(
     education == 1 ~ "Less than high school",
     education == 2 ~ "High school equivalent",
-    education == 3 ~ "More than high school"))
+    education == 3 ~ "More than high school"),
+    education = factor(
+      education, 
+      levels = c("Less than high school", "High school equivalent", "More than high school"),
+      ordered = TRUE
+    ))
 
 accel_df = 
   read_csv("nhanes_accel.csv", na = "NA") |> 
@@ -232,18 +242,15 @@ accel_df =
   na.omit()
 
 
-combine_df = 
+nhanes_combined_df = 
   left_join(demo_df, accel_df, by = "seqn")
 ```
 
 
-    
-    
-### produce a reader-friendly table for the number of men and woemn in each education category, create a visualization of the age distributions for men and women in each education category 
-
+### Table/Plot for men and women in each education category
 
 ```{r}
-combine_df |> 
+nhanes_combined_df |> 
   group_by(sex, education) |> 
   summarize(count = n()) |> 
   pivot_wider(
@@ -252,26 +259,41 @@ combine_df |>
   ) |> 
   knitr::kable(digits = 1)
 
-combine_df |> 
+
+nhanes_combined_df |> 
   ggplot(aes(x = age)) +
-  geom_histogram() +
-  facet_grid(sex ~ education)
+  geom_histogram(binwidth = 3) +
+  facet_grid(sex ~ education) +
+  labs(
+    x = "Age",
+    y = "Count",
+    title = "Age Distribution by Sex and Education Level"
+  )
 ```
 
-### aggregate across minutes to create a total activity variable for each participant, plot y = total activity, x = age, should compare men to women and have separate panels for each education level, include a trend line or smooth to illustrate differences 
+There are about the same females and males in the less than high school group, however, there are more males in the high school equivalent category, and vice versa for females in the more than high school category. When looking at the age distribution by both sex and education level, male and female age distribution for those in the more than high school group is approximately the same,
+### Plot for total activity for each participant, comparing men to women 
 ```{r}
-combine_df |> 
+nhanes_combined_df |> 
   mutate(total_activity = rowSums(across(starts_with("min")), na.rm = TRUE)) |> 
   ggplot(aes(x = age, y = total_activity, color = sex)) +
-  geom_point() +
-  geom_smooth() +
-  facet_wrap(~education)
+  geom_point(alpha = 0.6) +
+  geom_smooth(se = FALSE) +
+  facet_grid(. ~education) +
+  labs(
+    x = "Age", 
+    y = "Total Activity",
+    title = "Total activity for each participant, comparing men to women"
+  )
 ```
 
-### make a 3 panel plot that shows the 24-hr activity time courses for each education level and use color to indicate sex, describe in words any patterns or conclusions you can make based on this graph including a smooth trends may help
+Total activity decreases overall as age get older. For those who have an education less than high school, and more than high school, total activity steeply declines past 60 years old. Interestingly total activity increases and peaks at 40 years old for both men and women in the stratum for those who have a high school equivalent education. Generally, men have higher total activity than women, however this is the opposite for those older than 50 in those with less than high school education. 
+
+
+### 3 panel plot that shows the 24-hr activity time courses for each education level
 
 ```{r}
-combine_df |> 
+nhanes_combined_df |> 
   pivot_longer(
     cols = starts_with("min"),
     names_to = "minute",
@@ -284,7 +306,14 @@ combine_df |>
   group_by(education, sex, hour) |> 
   summarize(mean_activity = mean(activity, na.rm = TRUE), .groups = "drop") |> 
   ggplot(aes(x = hour, y = mean_activity, color = sex)) +
-  geom_line() +
-  facet_wrap(~education, ncol = 1)
+  geom_point(alpha = 0.25, size = 0.5) +
+  geom_smooth(se = FALSE) +
+  facet_grid(. ~education) +
+  labs(
+    x = "Hour of the day (24hr)",
+    y = "Mean activity",
+    title = "24 hour mean activity comparing men and women"
+  )
 ```
 
+All 3 plots have a similar general trend, with mean activity dropping just before 5 am, peaking at around 12 pm, and dropping throughout the rest of the day. The less than high school stratum has the greatest spread of minimum and maximum mean activity throughout the day, however the mean activity for men and women are most aligned. In comparison, the mean activity or men and women are pretty spread apart in the midday time for both high school equivalent and more than high school education stratums. 
