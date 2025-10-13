@@ -35,7 +35,7 @@ data("instacart")
 instacart
 ```
 
-The `instacart` dataset contains `r nrow(instacart)` observations and `r ncol(instacart)` variables. Each row represents a product from an order. There are `r n_distinct(instacart$order_id)` unique order_ids. Some examples of items in the dataset include order day of the week, order hour of the day, and information about the items ordered including the product name, the aisle it was in, and which department it falls into. For example, order_id 1145 ordered 29 items on Friday including items such as strawberries, spinach pizza, multi grain cheerios cereal, and everything bagels. 
+The `instacart` dataset contains `r nrow(instacart)` observations and `r ncol(instacart)` variables. Each row represents a product from an order. There are `r n_distinct(instacart$order_id)` unique order_ids. Some variables in the dataset include order day of the week, order hour of the day, and information about the items ordered including the product name, the aisle it was in, and which department it falls into. For example, order_id 1145 ordered 29 items on Friday including items such as strawberries, spinach pizza, multi grain cheerios cereal, and everything bagels. 
 
 ```{r}
 aislecnt = instacart |> 
@@ -62,6 +62,7 @@ aislecnt |>
        y = "Number of Items Ordered", 
        title = "Items ordered by Aisle with more than 10,000 items ordered")
 ```
+Items in the fresh vegetables aisle are the most ordered followed closely by fresh fruits. Packaged vegetables and fruits are the 3rd most ordered. This would make sense as these items are most likely ordered weekly, as they may go bad quicker, and are eaten more frequently.The aisles for butter, oils, candy/chocolates have less items ordered because there may be less of a need to get these frequently. 
 
 ### Table with 3 most popular items in each of the aisles 
 ```{r}
@@ -73,8 +74,9 @@ instacart |>
   slice_max(order_by = count, n=3) |> 
   knitr::kable(digits = 1)
 ```
+In the baking ingredients aisle, light brown sugar, pure baking soda, and cane sugar as the most popular. These are pretty essential ingredients when it comes to baking, so it would make sense that they are purchased the most in the baking ingredients aisle. Popular items in the package vegetables/fruits aisle include organic baby spinach, raspberries, and blueberries. This could be due to the fact that these are popular smoothie items and people generally buy pre-packaged vegetables/fruits for this purpose. Dog treats, wet food, and dog biscuits are the most popular items in the dog food care aisle.
 
-### Table showing the mean hour of the day at which Pink Lady Apples + Coffee Ice Cream are consumed 
+### Table showing the mean hour of the day at which Pink Lady Apples + Coffee Ice Cream are ordered 
 ```{r}
 instacart |> 
   filter(product_name %in% c("Pink Lady Apples", "Coffee Ice Cream")) |> 
@@ -92,6 +94,7 @@ instacart |>
   knitr::kable(digits = 1)
 ```
 
+Pink lady apples are ordered generally earlier in the day, and coffee ice cream is ordered all after noon (12 pm). Mean hour of day ordered for both items are about the same on Friday and Sunday, and are the most difference on Tuesday. 
 
 ## Problem 2
 ```{r}
@@ -146,8 +149,7 @@ nyc_price_df |>
   knitr::kable(digits = 1)
 ```
 
-48 zip codes appear 116 times and 26 appear less than 10 times. Some zip codes may be observed more in a month because some rental properties may be 
-/ write up 
+48 zip codes appear 116 times and 26 appear less than 10 times. Some zip codes may be observed more in a month because some rental properties may be reported more - such as densely populated areas like Manhattan would most likely have more zip codes reported consistently each month. Some zip codes may also not have housing and price data reported for every month, so it would show up less frequently.
 
 ### Average rental price in each borough and year
 ```{r}
@@ -271,7 +273,9 @@ nhanes_combined_df |>
   )
 ```
 
-There are about the same females and males in the less than high school group, however, there are more males in the high school equivalent category, and vice versa for females in the more than high school category. When looking at the age distribution by both sex and education level, male and female age distribution for those in the more than high school group is approximately the same,
+There are about the same females and males in the less than high school group, however, there are more males in the high school equivalent category, and vice versa for females in the more than high school category. When looking at the age distribution by both sex and education level, male and female age distribution for those in the more than high school group is approximately the same, with more individuals on the extremes. 
+
+
 ### Plot for total activity for each participant, comparing men to women 
 ```{r}
 nhanes_combined_df |> 
