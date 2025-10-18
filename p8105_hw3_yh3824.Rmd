@@ -98,7 +98,7 @@ Pink lady apples are ordered generally earlier in the day, and coffee ice cream 
 import and clean zip code data
 ```{r message = FALSE}
 zipcode_df = 
-  read_csv("zillow_data/Zip Codes.csv") |> 
+  read_csv("data/Zip Codes.csv") |> 
   janitor::clean_names() |> 
   mutate(
     borough = case_match(
@@ -117,7 +117,7 @@ zipcode_df =
 import and clean zori data
 ```{r message = FALSE}
 nyc_zillow_df = 
-  read_csv("zillow_data/Zip_Zori_uc_sfrcondomfr_sm_month_NYC.csv") |>
+  read_csv("data/Zip_Zori_uc_sfrcondomfr_sm_month_NYC.csv") |>
   janitor::clean_names() |>
   pivot_longer(x2015_01_31:x2024_08_31,
     names_to = "month",
@@ -134,7 +134,7 @@ nyc_price_df =
   left_join(nyc_zillow_df, zipcode_df, by = "zip_code")
 ```
 
-### How many zip codes are observed 116 times -> how many are observed once a month over the 116 months , how many are observed fewer than 10 times, why are some zip codes observed rarely and others observed in each month 
+### Zip code appearances
 ```{r}
 nyc_price_df |> 
   group_by(zip_code) |>
@@ -220,7 +220,7 @@ ggsave(filename = "zillowplot.png",
 Loading, tidying, and merging the datasets.
 ```{r message = FALSE}
 demo_df = 
-  read_csv("nhanes_covar.csv", skip = 4, na = "NA") |> 
+  read_csv("data/nhanes_covar.csv", skip = 4, na = "NA") |> 
   janitor::clean_names() |> 
   filter(age > 20) |> 
   drop_na() |> 
@@ -236,7 +236,7 @@ demo_df =
     ))
 
 accel_df = 
-  read_csv("nhanes_accel.csv", na = "NA") |> 
+  read_csv("data/nhanes_accel.csv", na = "NA") |> 
   janitor::clean_names() |> 
   na.omit()
 
