@@ -2,7 +2,7 @@
 title: "Homework 3"
 author: "ruby"
 date: "2025-10-02"
-output: html_document
+output: github_document
 ---
 
 ```{r include = FALSE, message = FALSE, warning = FALSE}
