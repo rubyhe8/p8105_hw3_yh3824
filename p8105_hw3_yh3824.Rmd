@@ -31,8 +31,6 @@ scale_fill_discrete = scale_fill_viridis_d
 ```{r}
 library(p8105.datasets)
 data("instacart")
-
-instacart
 ```
 
 The `instacart` dataset contains `r nrow(instacart)` observations and `r ncol(instacart)` variables. Each row represents a product from an order. There are `r n_distinct(instacart$order_id)` unique order_ids. Some variables in the dataset include order day of the week, order hour of the day, and information about the items ordered including the product name, the aisle it was in, and which department it falls into. For example, order_id 1145 ordered 29 items on Friday including items such as strawberries, spinach pizza, multi grain cheerios cereal, and everything bagels. 
@@ -65,7 +63,7 @@ aislecnt |>
 Items in the fresh vegetables aisle are the most ordered followed closely by fresh fruits. Packaged vegetables and fruits are the 3rd most ordered. This would make sense as these items are most likely ordered weekly, as they may go bad quicker, and are eaten more frequently.The aisles for butter, oils, candy/chocolates have less items ordered because there may be less of a need to get these frequently. 
 
 ### Table with 3 most popular items in each of the aisles 
-```{r}
+```{r message = FALSE}
 instacart |> 
   filter(aisle %in% c("baking ingredients", "dog food care", "packaged vegetables fruits")) |> 
   group_by(aisle, product_name) |> 
@@ -77,7 +75,7 @@ instacart |>
 In the baking ingredients aisle, light brown sugar, pure baking soda, and cane sugar as the most popular. These are pretty essential ingredients when it comes to baking, so it would make sense that they are purchased the most in the baking ingredients aisle. Popular items in the package vegetables/fruits aisle include organic baby spinach, raspberries, and blueberries. This could be due to the fact that these are popular smoothie items and people generally buy pre-packaged vegetables/fruits for this purpose. Dog treats, wet food, and dog biscuits are the most popular items in the dog food care aisle.
 
 ### Table showing the mean hour of the day at which Pink Lady Apples + Coffee Ice Cream are ordered 
-```{r}
+```{r message = FALSE}
 instacart |> 
   filter(product_name %in% c("Pink Lady Apples", "Coffee Ice Cream")) |> 
   mutate(order_dow = recode(order_dow,
@@ -97,13 +95,11 @@ instacart |>
 Pink lady apples are ordered generally earlier in the day, and coffee ice cream is ordered all after noon (12 pm). Mean hour of day ordered for both items are about the same on Friday and Sunday, and are the most difference on Tuesday. 
 
 ## Problem 2
-```{r}
+import and clean zip code data
+```{r message = FALSE}
 zipcode_df = 
   read_csv("zillow_data/Zip Codes.csv") |> 
   janitor::clean_names() |> 
-  filter(
-    !(zip_code == 10463 & county == "New York"),
-    !(zip_code == 11201 & county == "New York"))  |> 
   mutate(
     borough = case_match(
       county,
@@ -114,18 +110,19 @@ zipcode_df =
       "Richmond" ~ "Staten Island"
     )
   ) |> 
-  select(zip_code, borough, neighborhood)
+  select(zip_code, borough, neighborhood) |> 
+  distinct(zip_code, .keep_all = TRUE)
 ```
 
 import and clean zori data
-```{r}
+```{r message = FALSE}
 nyc_zillow_df = 
-  read_csv("zillow_data/Zip_Zori_uc_sfrcondomfr_sm_month_NYC.csv") |> 
-  pivot_longer(
-    -(RegionID:CountyName),
+  read_csv("zillow_data/Zip_Zori_uc_sfrcondomfr_sm_month_NYC.csv") |>
+  janitor::clean_names() |>
+  pivot_longer(x2015_01_31:x2024_08_31,
     names_to = "month",
-    values_to = "price") |> 
-  janitor::clean_names() |> 
+    values_to = "price",
+    names_prefix = "x") |> 
   rename(zip_code = region_name) |> 
   mutate(
     month = as_date(month),
@@ -152,7 +149,7 @@ nyc_price_df |>
 48 zip codes appear 116 times and 26 appear less than 10 times. Some zip codes may be observed more in a month because some rental properties may be reported more - such as densely populated areas like Manhattan would most likely have more zip codes reported consistently each month. Some zip codes may also not have housing and price data reported for every month, so it would show up less frequently.
 
 ### Average rental price in each borough and year
-```{r}
+```{r message = FALSE}
 nyc_price_df |> 
   group_by(borough, year) |> 
   summarize(avg_price = mean(price, na.rm = TRUE)) |> 
@@ -166,7 +163,7 @@ nyc_price_df |>
 Average rental price is the highest in Manhattan and the lowest in the Bronx. Overall average rental price increases over time, with some exceptions (For example rental price dropped from $3310 to $3106 in Manhattan from 2019 to 2020, this could be due to the COVID-19 pandemic possibly). There is no information for Staten Island average rental prices until 2020. Queens seems to have the slowest increase in average rent over the years, and Manhattan has the steepest increase over time. 
 
 ### Plot showing NYC rental prices within zip codes, comparing across boroughs 
-```{r}
+```{r message = FALSE}
 price_zip_allyears = 
 nyc_price_df |> 
   group_by(zip_code, year) |> 
@@ -187,7 +184,7 @@ price_zip_allyears
 This plot shows NYC rental prices within zip codes, comparing over time in each borough. Overall, all rent prices increased over time, with the steepest increases occurring after 2022. The Bronx, Brooklyn, and Manhattan boroughs experienced a drop in rent in 2020-2021. The Bronx experiences a steady incline over the years. Because there is no information regarding rental prices prior to 2020 for Staten Island, we can see that the line for Staten Island does not begin until 2020. Rental prices in the Bronx and Staten Island are most similar and are the lowest.
 
 ### Average rental price within each zip code over months in 2023, compared across boroughs
-```{r}
+```{r message = FALSE, warning = FALSE}
 price_zip_2023 =
 nyc_price_df |> 
   filter(year(year) == 2023) |> 
@@ -209,7 +206,7 @@ price_zip_2023
 Rental prices in Manhattan have the greatest range, along with outliers at approximately $6,600 and $7,800. The average rent per month in Manhattan in 2023 is just over $4,000. Staten Island rental prices have the smallest range with an average of approximately $2,300. 
 
 ### Combining 2 previous plots into one and saving into a `results` folder in repo
-```{r}
+```{r message = FALSE, warning = FALSE}
 zillowplots = price_zip_allyears / price_zip_2023
 
 ggsave(filename = "zillowplot.png", 
@@ -221,7 +218,7 @@ ggsave(filename = "zillowplot.png",
 
 ## Problem 3
 Loading, tidying, and merging the datasets.
-```{r}
+```{r message = FALSE}
 demo_df = 
   read_csv("nhanes_covar.csv", skip = 4, na = "NA") |> 
   janitor::clean_names() |> 
@@ -251,7 +248,7 @@ nhanes_combined_df =
 
 ### Table/Plot for men and women in each education category
 
-```{r}
+```{r message = FALSE}
 nhanes_combined_df |> 
   group_by(sex, education) |> 
   summarize(count = n()) |> 
@@ -277,7 +274,7 @@ There are about the same females and males in the less than high school group, h
 
 
 ### Plot for total activity for each participant, comparing men to women 
-```{r}
+```{r message = FALSE}
 nhanes_combined_df |> 
   mutate(total_activity = rowSums(across(starts_with("min")), na.rm = TRUE)) |> 
   ggplot(aes(x = age, y = total_activity, color = sex)) +
@@ -296,7 +293,7 @@ Total activity decreases overall as age get older. For those who have an educati
 
 ### 3 panel plot that shows the 24-hr activity time courses for each education level
 
-```{r}
+```{r message = FALSE}
 nhanes_combined_df |> 
   pivot_longer(
     cols = starts_with("min"),
